@@ -19,6 +19,10 @@ export function EnquiriesClient({ initialEnquiries, initialExamAssignments = {} 
     const [dateStart, setDateStart] = useState('')
     const [dateEnd, setDateEnd] = useState('')
 
+    // Supabase client
+    const supabase = createClient()
+
+
     // Selection state
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
 
@@ -305,17 +309,35 @@ export function EnquiriesClient({ initialEnquiries, initialExamAssignments = {} 
         let username = enquiry.user_credentials?.[0]?.username || enquiry.user_credentials?.username
         let password = newCredentials[enquiry.id]
 
-        if (!username) {
-            setIsGenerating(true)
-            try {
-                const response = await fetch('/api/generate-credentials', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ enquiryIds: [enquiry.id] })
-                })
-                const data = await response.json()
-                if (response.ok && data.results?.[0]?.status === 'success') {
-                    const result = data.results[0]
+        // Always call the API to generate or regenerate credentials for sharing
+        setIsGenerating(true)
+        try {
+            // Always request regenerate=true when sharing to ensure we get a password
+            // For new users: creates credentials
+            // For existing users: regenerates password so we can share it
+
+            console.log('=== Client-side Debug ===')
+            console.log('enquiry:', enquiry)
+            console.log('username:', username)
+            console.log('Always sending regenerate: true for sharing')
+
+            const requestBody = {
+                enquiryIds: [enquiry.id],
+                regenerate: true // Always regenerate to get a shareable password
+            }
+            console.log('Request body:', JSON.stringify(requestBody, null, 2))
+
+            const response = await fetch('/api/generate-credentials', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(requestBody)
+            })
+            const data = await response.json()
+            const result = data.results?.[0]
+
+            if (response.ok && result) {
+                if (result.status === 'success') {
+                    // Credentials generated or password regenerated
                     username = result.username
                     password = result.password
                     setNewCredentials(prev => ({ ...prev, [enquiry.id]: password }))
@@ -329,18 +351,31 @@ export function EnquiriesClient({ initialEnquiries, initialExamAssignments = {} 
                         }
                     }
                     setEnquiries(updatedEnquiries)
+                } else if (result.status === 'skipped') {
+                    // This shouldn't happen anymore with regenerate flag, but handle it
+                    username = result.username
+                    alert('Using existing credentials. Password was not regenerated.')
+                    setIsGenerating(false)
+                    return
                 } else {
-                    alert('Failed to generate credentials')
+                    // Failed status
+                    console.error('Failed to generate credentials:', data)
+                    alert(`Failed to generate credentials: ${result.error || data.error || 'Unknown error'}`)
                     setIsGenerating(false)
                     return
                 }
-            } catch (error) {
-                console.error('Error generating:', error)
+            } else {
+                console.error('Failed to generate credentials:', data)
+                alert(`Failed to generate credentials: ${data.error || 'Unknown error'}`)
                 setIsGenerating(false)
                 return
-            } finally {
-                setIsGenerating(false)
             }
+        } catch (error) {
+            console.error('Error generating:', error)
+            setIsGenerating(false)
+            return
+        } finally {
+            setIsGenerating(false)
         }
 
         let message = ''
