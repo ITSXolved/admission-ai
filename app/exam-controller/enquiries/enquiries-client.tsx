@@ -380,9 +380,9 @@ export function EnquiriesClient({ initialEnquiries, initialExamAssignments = {} 
 
         let message = ''
         if (password) {
-            message = `*Welcome to AILT Global Academy!*\n\nAssalamu Alaikum ${enquiry.first_name},\n\nWe are pleased to inform you that your admission application has been processed.\n\n*Your Login Credentials:*\nUsername: ${username}\nPassword: ${password}\n\n*Login Here:* https://ailt-academy.com/login`
+            message = `*Welcome to AILT Global Academy!*\n\nAssalamu Alaikum ${enquiry.first_name},\n\nWe are pleased to inform you that your admission application has been processed.\n\n*Your Login Credentials:*\nUsername: ${username}\nPassword: ${password}\n\n*Login Here:* https://admission-ai-five.vercel.app/login`
         } else {
-            message = `*Welcome to AILT Global Academy!*\n\nAssalamu Alaikum ${enquiry.first_name},\n\nWe are pleased to inform you that your admission application has been processed.\n\n*Your Login Credentials:*\nUsername: ${username}\nPassword: (Check your email or reset below)\n\n*Login:* https://ailt-academy.com/login\n*Reset Password:* https://ailt-academy.com/forgot-password`
+            message = `*Welcome to AILT Global Academy!*\n\nAssalamu Alaikum ${enquiry.first_name},\n\nWe are pleased to inform you that your admission application has been processed.\n\n*Your Login Credentials:*\nUsername: ${username}\nPassword: (Check your email or reset below)\n\n*Login:* https://admission-ai-five.vercel.app/login\n*Reset Password:* https://admission-ai-five.vercel.app/forgot-password`
         }
         setShareMessage(message)
         setShareModalEnquiry(enquiry)
