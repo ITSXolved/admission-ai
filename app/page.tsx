@@ -62,8 +62,10 @@ export default function Home() {
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
-              <Link
-                href="/student/register"
+              <a
+                href="https://www.ailtacademy.com/admission"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="group px-8 py-4 bg-gradient-to-r from-primary to-accent text-white rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all"
               >
                 <span className="flex items-center justify-center gap-2">
@@ -72,7 +74,7 @@ export default function Home() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                   </svg>
                 </span>
-              </Link>
+              </a>
               <Link
                 href="/login"
                 className="px-8 py-4 bg-white border-2 border-gray-200 text-gray-700 rounded-lg font-semibold hover:border-primary hover:text-primary transition-all"
@@ -160,15 +162,17 @@ export default function Home() {
           <p className="text-lg text-white/90 mb-8 leading-relaxed">
             Join thousands of successful students who have transformed their future with AILT Global Academy
           </p>
-          <Link
-            href="/student/register"
+          <a
+            href="https://www.ailtacademy.com/admission"
+            target="_blank"
+            rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-8 py-4 bg-white text-primary rounded-lg font-bold shadow-xl hover:shadow-2xl transition-all"
           >
             Begin Application
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
             </svg>
-          </Link>
+          </a>
         </div>
       </section>
 
