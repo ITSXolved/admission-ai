@@ -346,7 +346,7 @@ export function EnquiriesClient({ initialEnquiries, initialExamAssignments = {},
             enquiry.email,
             enquiry.primary_mobile,
             `Grade ${enquiry.applying_grade}`,
-            (enquiry.overall_status || 'pending').replace(/_/g, ' '),
+            formatStatusLabel(enquiry.overall_status || 'pending'),
             new Date(enquiry.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
         ])
 
@@ -362,15 +362,24 @@ export function EnquiriesClient({ initialEnquiries, initialExamAssignments = {},
     }
 
     const getStatusColor = (status: string) => {
-        const colors: Record<string, string> = {
-            pending: 'bg-blue-100 text-blue-800',
-            applied: 'bg-indigo-100 text-indigo-800',
-            qualified: 'bg-green-100 text-green-800',
-            not_qualified: 'bg-red-100 text-red-800',
-            called_for_interview: 'bg-yellow-100 text-yellow-800',
-            admitted: 'bg-purple-100 text-purple-800',
+        switch (status) {
+            case 'pending': return 'bg-yellow-100 text-yellow-800'
+            case 'applied': return 'bg-blue-100 text-blue-800'
+            case 'appearing_for_test': return 'bg-purple-100 text-purple-800'
+            case 'test_completed': return 'bg-green-100 text-green-800'
+            case 'qualified': return 'bg-green-100 text-green-800'
+            case 'not_qualified': return 'bg-red-100 text-red-800'
+            default: return 'bg-gray-100 text-gray-800'
         }
-        return colors[status] || 'bg-gray-100 text-gray-800'
+    }
+
+    const formatStatusLabel = (status: string) => {
+        switch (status) {
+            case 'appearing_for_test': return 'Appearing for Test'
+            case 'test_completed': return 'Test Completed'
+            case 'not_qualified': return 'Not Qualified'
+            default: return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+        }
     }
 
     const handleShareClick = async (enquiry: any) => {
@@ -555,6 +564,8 @@ Password: (Check your email or reset below)
                             <option value="all">All Status</option>
                             <option value="pending">Pending</option>
                             <option value="applied">Applied</option>
+                            <option value="appearing_for_test">Appearing for Test</option>
+                            <option value="test_completed">Test Completed</option>
                             <option value="qualified">Qualified</option>
                             <option value="not_qualified">Not Qualified</option>
                         </select>
@@ -668,7 +679,7 @@ Password: (Check your email or reset below)
                                     </td>
                                     <td className="py-3 px-4">
                                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(enquiry.overall_status || 'pending')}`}>
-                                            {(enquiry.overall_status || 'pending').replace(/_/g, ' ')}
+                                            {formatStatusLabel(enquiry.overall_status || 'pending')}
                                         </span>
                                     </td>
                                     <td className="py-3 px-4 text-sm text-[#6B6B6B]">
@@ -936,7 +947,7 @@ Password: (Check your email or reset below)
                                         <label className="text-sm font-medium text-[#6B6B6B]">Overall Status</label>
                                         <div className="mt-2">
                                             <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(viewingEnquiry.overall_status || 'pending')}`}>
-                                                {(viewingEnquiry.overall_status || 'pending').replace(/_/g, ' ')}
+                                                {formatStatusLabel(viewingEnquiry.overall_status || 'pending')}
                                             </span>
                                         </div>
                                     </div>

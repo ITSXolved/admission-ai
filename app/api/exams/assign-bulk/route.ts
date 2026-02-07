@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
                 await supabase
                     .from('admission_enquiries')
                     .update({
-                        exam_status: 'not_started',
+                        exam_status: 'appearing_for_test',
                         overall_status: 'applied' // Or ensure it's in a state where they can take test
                     })
                     .eq('id', id)
