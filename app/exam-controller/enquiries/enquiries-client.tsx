@@ -208,6 +208,16 @@ export function EnquiriesClient({ initialEnquiries, initialExamAssignments = {},
             return
         }
 
+        // Check if selected candidates have exams assigned
+        const candidatesWithoutExams = Array.from(selectedIds).filter(id => {
+            return !examAssignments[id] || examAssignments[id].length === 0
+        })
+
+        if (candidatesWithoutExams.length > 0) {
+            alert(`${candidatesWithoutExams.length} selected candidate(s) don't have exams assigned yet. Please assign a test first before scheduling.`)
+            return
+        }
+
         setIsScheduling(true)
         try {
             const response = await fetch('/api/exams/schedule-bulk', {
@@ -221,25 +231,31 @@ export function EnquiriesClient({ initialEnquiries, initialExamAssignments = {},
 
             const data = await response.json()
             if (response.ok) {
-                alert(`Successfully scheduled exam for ${data.summary.successful} candidates.`)
-                setIsScheduleModalOpen(false)
-                setSelectedIds(new Set())
-                setScheduledDateTime('')
+                const { successful, failed } = data.summary
 
-                // Refresh exam schedules
-                const supabase = createClient()
-                const { data: schedulesData } = await supabase
-                    .from('student_exam_attempts')
-                    .select('student_id, exam_scheduled_datetime')
+                if (successful > 0) {
+                    alert(`Successfully scheduled exam for ${successful} candidate(s).${failed > 0 ? ` ${failed} failed.` : ''}`)
+                    setIsScheduleModalOpen(false)
+                    setSelectedIds(new Set())
+                    setScheduledDateTime('')
 
-                if (schedulesData) {
-                    const schedules: Record<string, string | null> = {}
-                    schedulesData.forEach((attempt: any) => {
-                        if (attempt.exam_scheduled_datetime) {
-                            schedules[attempt.student_id] = attempt.exam_scheduled_datetime
-                        }
-                    })
-                    setExamSchedules(schedules)
+                    // Refresh exam schedules
+                    const supabase = createClient()
+                    const { data: schedulesData } = await supabase
+                        .from('student_exam_attempts')
+                        .select('student_id, exam_scheduled_datetime')
+
+                    if (schedulesData) {
+                        const schedules: Record<string, string | null> = {}
+                        schedulesData.forEach((attempt: any) => {
+                            if (attempt.exam_scheduled_datetime) {
+                                schedules[attempt.student_id] = attempt.exam_scheduled_datetime
+                            }
+                        })
+                        setExamSchedules(schedules)
+                    }
+                } else {
+                    alert('No candidates were scheduled. Please ensure candidates have exams assigned.')
                 }
             } else {
                 alert('Failed to schedule exams: ' + data.error)
