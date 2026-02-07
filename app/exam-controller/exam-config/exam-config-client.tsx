@@ -262,7 +262,19 @@ export default function ExamConfigClient({ initialSessions }: ExamConfigClientPr
     return (
         <div className="p-8">
             {/* Header */}
-            {/* ... header content ... */}
+            <div className="flex items-center justify-between mb-8">
+                <div>
+                    <h2 className="text-3xl font-bold text-[#1A1A1A] mb-2">Exam Configuration</h2>
+                    <p className="text-[#6B6B6B]">Create and manage exam sessions</p>
+                </div>
+                <button
+                    onClick={() => setIsCreateModalOpen(true)}
+                    className="flex items-center gap-2 px-6 py-3 bg-[#C9A961] text-white rounded-lg hover:bg-[#A68B4E] transition-colors shadow-md"
+                >
+                    <Plus className="h-5 w-5" />
+                    Create Exam Session
+                </button>
+            </div>
 
             {/* Exam Sessions List */}
             <div className="space-y-6">
