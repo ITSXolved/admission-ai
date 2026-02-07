@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Search, Download, Mail, MessageSquare, Plus, X, Trash2, Share2, Loader2, Calendar, CheckSquare, Square } from 'lucide-react'
+import { Search, Download, Mail, MessageSquare, Plus, X, Trash2, Share2, Loader2, Calendar, CheckSquare, Square, Clock } from 'lucide-react'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { createClient } from '@/lib/supabase/client'
@@ -9,9 +9,10 @@ import { createClient } from '@/lib/supabase/client'
 interface EnquiriesClientProps {
     initialEnquiries: any[]
     initialExamAssignments?: Record<string, string[]>
+    initialExamSchedules?: Record<string, string | null>
 }
 
-export function EnquiriesClient({ initialEnquiries, initialExamAssignments = {} }: EnquiriesClientProps) {
+export function EnquiriesClient({ initialEnquiries, initialExamAssignments = {}, initialExamSchedules = {} }: EnquiriesClientProps) {
     const [enquiries, setEnquiries] = useState(initialEnquiries)
     const [searchTerm, setSearchTerm] = useState('')
     const [statusFilter, setStatusFilter] = useState('all')
@@ -43,6 +44,14 @@ export function EnquiriesClient({ initialEnquiries, initialExamAssignments = {} 
 
     // Exam assignments for table display (enquiry_id -> exam names[])
     const [examAssignments, setExamAssignments] = useState<Record<string, string[]>>(initialExamAssignments)
+
+    // Exam schedules (enquiry_id -> datetime)
+    const [examSchedules, setExamSchedules] = useState<Record<string, string | null>>(initialExamSchedules)
+
+    // Schedule Exam Modal
+    const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false)
+    const [scheduledDateTime, setScheduledDateTime] = useState('')
+    const [isScheduling, setIsScheduling] = useState(false)
 
     // Previous state code...
     const [shareMessage, setShareMessage] = useState('')
@@ -190,6 +199,56 @@ export function EnquiriesClient({ initialEnquiries, initialExamAssignments = {} 
             alert('An error occurred while assigning tests.')
         } finally {
             setIsAssigning(false)
+        }
+    }
+
+    const handleScheduleExam = async () => {
+        if (!scheduledDateTime) {
+            alert('Please select a date and time')
+            return
+        }
+
+        setIsScheduling(true)
+        try {
+            const response = await fetch('/api/exams/schedule-bulk', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    enquiryIds: Array.from(selectedIds),
+                    examDateTime: scheduledDateTime
+                })
+            })
+
+            const data = await response.json()
+            if (response.ok) {
+                alert(`Successfully scheduled exam for ${data.summary.successful} candidates.`)
+                setIsScheduleModalOpen(false)
+                setSelectedIds(new Set())
+                setScheduledDateTime('')
+
+                // Refresh exam schedules
+                const supabase = createClient()
+                const { data: schedulesData } = await supabase
+                    .from('student_exam_attempts')
+                    .select('student_id, exam_scheduled_datetime')
+
+                if (schedulesData) {
+                    const schedules: Record<string, string | null> = {}
+                    schedulesData.forEach((attempt: any) => {
+                        if (attempt.exam_scheduled_datetime) {
+                            schedules[attempt.student_id] = attempt.exam_scheduled_datetime
+                        }
+                    })
+                    setExamSchedules(schedules)
+                }
+            } else {
+                alert('Failed to schedule exams: ' + data.error)
+            }
+        } catch (error) {
+            console.error('Error scheduling exam:', error)
+            alert('An error occurred while scheduling exams.')
+        } finally {
+            setIsScheduling(false)
         }
     }
 
@@ -378,6 +437,25 @@ export function EnquiriesClient({ initialEnquiries, initialExamAssignments = {} 
             setIsGenerating(false)
         }
 
+        // Format exam scheduled datetime if available
+        const examDatetime = examSchedules[enquiry.id]
+        let examScheduleText = ''
+        if (examDatetime) {
+            const examDate = new Date(examDatetime)
+            const formattedDate = examDate.toLocaleDateString('en-IN', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            })
+            const formattedTime = examDate.toLocaleTimeString('en-IN', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            })
+            examScheduleText = `\n\n*Exam Schedule:*\nDate: ${formattedDate}\nTime: ${formattedTime}`
+        }
+
         let message = ''
         if (password) {
             message = `*Welcome to AILT Global Academy!*
@@ -390,7 +468,7 @@ We are pleased to inform you that your admission application has been processed.
 Username: ${username}
 Password: ${password}
 
-*Login Here:* https://admission.ailt.in/login`
+*Login Here:* https://admission.ailt.in/login${examScheduleText}`
         } else {
             message = `*Welcome to AILT Global Academy!*
 
@@ -403,7 +481,7 @@ Username: ${username}
 Password: (Check your email or reset below)
 
 *Login:* https://admission.ailt.in/login
-*Reset Password:* https://admission.ailt.in/forgot-password`
+*Reset Password:* https://admission.ailt.in/forgot-password${examScheduleText}`
         }
         setShareMessage(message)
         setShareModalEnquiry(enquiry)
@@ -511,6 +589,15 @@ Password: (Check your email or reset below)
                         </button>
 
                         <button
+                            onClick={() => setIsScheduleModalOpen(true)}
+                            disabled={selectedIds.size === 0}
+                            className="flex items-center gap-2 px-4 py-2 bg-[#C9A961] text-white rounded-lg hover:bg-[#A68B4E] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <Clock className="h-5 w-5" />
+                            Schedule Exam
+                        </button>
+
+                        <button
                             onClick={handleExportPDF}
                             className="flex items-center justify-center gap-2 px-4 py-2 bg-[#C9A961] text-white rounded-lg hover:bg-[#A68B4E] transition-colors"
                         >
@@ -538,6 +625,7 @@ Password: (Check your email or reset below)
                                 <th className="text-left py-3 px-4 text-sm font-semibold text-[#1A1A1A]">Grade</th>
                                 <th className="text-left py-3 px-4 text-sm font-semibold text-[#1A1A1A]">Status</th>
                                 <th className="text-left py-3 px-4 text-sm font-semibold text-[#1A1A1A]">Assigned Exams</th>
+                                <th className="text-left py-3 px-4 text-sm font-semibold text-[#1A1A1A]">Exam Date/Time</th>
                                 <th className="text-left py-3 px-4 text-sm font-semibold text-[#1A1A1A]">Date</th>
                                 <th className="text-left py-3 px-4 text-sm font-semibold text-[#1A1A1A]">Actions</th>
                             </tr>
@@ -578,6 +666,28 @@ Password: (Check your email or reset below)
                                             </div>
                                         ) : (
                                             <span className="text-gray-400 italic">No exams assigned</span>
+                                        )}
+                                    </td>
+                                    <td className="py-3 px-4 text-sm text-[#6B6B6B]">
+                                        {examSchedules[enquiry.id] ? (
+                                            <div className="flex flex-col">
+                                                <span className="font-medium text-[#1A1A1A]">
+                                                    {new Date(examSchedules[enquiry.id]!).toLocaleDateString('en-IN', {
+                                                        month: 'short',
+                                                        day: 'numeric',
+                                                        year: 'numeric'
+                                                    })}
+                                                </span>
+                                                <span className="text-xs text-[#6B6B6B]">
+                                                    {new Date(examSchedules[enquiry.id]!).toLocaleTimeString('en-IN', {
+                                                        hour: '2-digit',
+                                                        minute: '2-digit',
+                                                        hour12: true
+                                                    })}
+                                                </span>
+                                            </div>
+                                        ) : (
+                                            <span className="text-gray-400 italic">Not Scheduled</span>
                                         )}
                                     </td>
                                     <td className="py-3 px-4 text-sm text-[#6B6B6B]">
@@ -678,6 +788,50 @@ Password: (Check your email or reset below)
                                 className="flex items-center gap-2 px-6 py-2 bg-[#1A1A1A] text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50"
                             >
                                 {isAssigning ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Confirm Assignment'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Schedule Exam Modal */}
+            {isScheduleModalOpen && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-xl font-bold text-[#1A1A1A]">Schedule Exam</h3>
+                            <button onClick={() => setIsScheduleModalOpen(false)} className="p-1 hover:bg-gray-100 rounded-full">
+                                <X className="h-5 w-5 text-gray-500" />
+                            </button>
+                        </div>
+
+                        <div className="mb-6">
+                            <p className="text-sm text-gray-600 mb-4">
+                                You are scheduling an exam for <span className="font-semibold text-gray-900">{selectedIds.size}</span> selected candidates.
+                            </p>
+
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Exam Date & Time</label>
+                            <input
+                                type="datetime-local"
+                                value={scheduledDateTime}
+                                onChange={(e) => setScheduledDateTime(e.target.value)}
+                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C9A961] focus:border-transparent"
+                            />
+                        </div>
+
+                        <div className="flex justify-end gap-3">
+                            <button
+                                onClick={() => setIsScheduleModalOpen(false)}
+                                className="px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-lg"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleScheduleExam}
+                                disabled={isScheduling || !scheduledDateTime}
+                                className="flex items-center gap-2 px-6 py-2 bg-[#C9A961] text-white rounded-lg hover:bg-[#A68B4E] transition-colors disabled:opacity-50"
+                            >
+                                {isScheduling ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Confirm Schedule'}
                             </button>
                         </div>
                     </div>
