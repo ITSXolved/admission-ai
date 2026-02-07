@@ -1,11 +1,44 @@
 'use client'
 
 import { useState } from 'react'
+import { Trash2 } from 'lucide-react'
 import StatusCell from './StatusCell'
 import WrittenReviewModal from '../../interviews/components/WrittenReviewModal'
 
-export default function PerformanceRow({ student, index }: { student: any, index: number }) {
+interface PerformanceRowProps {
+    student: any
+    index: number
+    onDelete: (scoreId: string) => void
+}
+
+export default function PerformanceRow({ student, index, onDelete }: PerformanceRowProps) {
     const [isReviewOpen, setIsReviewOpen] = useState(false)
+    const [isDeleting, setIsDeleting] = useState(false)
+
+    const handleDelete = async () => {
+        if (!confirm(`Are you sure you want to delete ${student.admission_enquiries?.first_name} ${student.admission_enquiries?.last_name} from performance tracking?`)) {
+            return
+        }
+
+        setIsDeleting(true)
+        try {
+            const response = await fetch(`/api/performance/delete?scoreId=${student.id}`, {
+                method: 'DELETE'
+            })
+
+            if (response.ok) {
+                onDelete(student.id)
+            } else {
+                const data = await response.json()
+                alert('Failed to delete: ' + (data.error || 'Unknown error'))
+            }
+        } catch (error) {
+            console.error('Error deleting performance record:', error)
+            alert('An error occurred while deleting')
+        } finally {
+            setIsDeleting(false)
+        }
+    }
 
     return (
         <>
@@ -49,6 +82,16 @@ export default function PerformanceRow({ student, index }: { student: any, index
                         scoreId={student.id}
                         initialStatus={student.is_qualified}
                     />
+                </td>
+                <td className="py-3 px-4">
+                    <button
+                        onClick={handleDelete}
+                        disabled={isDeleting}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                        title="Delete from performance tracking"
+                    >
+                        <Trash2 className="h-4 w-4" />
+                    </button>
                 </td>
             </tr>
 
