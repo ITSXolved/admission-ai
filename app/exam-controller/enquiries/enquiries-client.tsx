@@ -380,9 +380,30 @@ export function EnquiriesClient({ initialEnquiries, initialExamAssignments = {} 
 
         let message = ''
         if (password) {
-            message = `*Welcome to AILT Global Academy!*\\n\\nAssalamu Alaikum ${enquiry.first_name},\\n\\nWe are pleased to inform you that your admission application has been processed.\\n\\n*Your Login Credentials:*\\nUsername: ${username}\\nPassword: ${password}\\n\\n*Login Here:* https://admission.ailt.in/login`
+            message = `*Welcome to AILT Global Academy!*
+
+Assalamu Alaikum ${enquiry.first_name},
+
+We are pleased to inform you that your admission application has been processed.
+
+*Your Login Credentials:*
+Username: ${username}
+Password: ${password}
+
+*Login Here:* https://admission.ailt.in/login`
         } else {
-            message = `*Welcome to AILT Global Academy!*\\n\\nAssalamu Alaikum ${enquiry.first_name},\\n\\nWe are pleased to inform you that your admission application has been processed.\\n\\n*Your Login Credentials:*\\nUsername: ${username}\\nPassword: (Check your email or reset below)\\n\\n*Login:* https://admission.ailt.in/login\\n*Reset Password:* https://admission.ailt.in/forgot-password`
+            message = `*Welcome to AILT Global Academy!*
+
+Assalamu Alaikum ${enquiry.first_name},
+
+We are pleased to inform you that your admission application has been processed.
+
+*Your Login Credentials:*
+Username: ${username}
+Password: (Check your email or reset below)
+
+*Login:* https://admission.ailt.in/login
+*Reset Password:* https://admission.ailt.in/forgot-password`
         }
         setShareMessage(message)
         setShareModalEnquiry(enquiry)
