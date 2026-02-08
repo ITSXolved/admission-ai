@@ -64,37 +64,56 @@ export async function POST(request: NextRequest) {
                     // We don't have the password for existing users, so we won't send it in email unless reset
                     password = null
                 } else {
-                    // Generate new
-                    username = generateUsername(enquiry.first_name, enquiry.last_name, enquiry.id)
-                    password = generatePassword(10)
+                    // Check if user already exists in profiles (to handle cases where they registered but this specific enquiry is new)
+                    const { data: existingProfile } = await supabase
+                        .from('profiles')
+                        .select('id, email')
+                        .eq('email', enquiry.email)
+                        .single()
 
-                    // Create auth user
-                    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-                        email: enquiry.email,
-                        password: password,
-                        email_confirm: true,
-                        user_metadata: {
+                    if (existingProfile) {
+                        userId = existingProfile.id
+                        username = generateUsername(enquiry.first_name, enquiry.last_name, enquiry.id)
+                        password = null // No password change for existing users
+                    } else {
+                        // Generate new
+                        username = generateUsername(enquiry.first_name, enquiry.last_name, enquiry.id)
+                        password = generatePassword(10)
+
+                        // Create auth user
+                        const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+                            email: enquiry.email,
+                            password: password,
+                            email_confirm: true,
+                            user_metadata: {
+                                full_name: `${enquiry.first_name} ${enquiry.last_name}`,
+                                role: 'candidate',
+                            },
+                        })
+
+                        if (authError || !authData.user) {
+                            // If error is "email exists" but it wasn't in profiles, that's an edge case (Phantom user)
+                            // We can try to fetch the user from Auth to get the ID, or just fail.
+                            // For now, let's log it.
+                            const errorMessage = authError?.message || 'Failed to create user account'
+                            console.error(`Auth creation failed for ${enquiry.email}:`, authError)
+                            results.push({ id, status: 'failed', error: errorMessage })
+                            continue
+                        }
+
+                        userId = authData.user.id
+
+                        // Create profile
+                        await supabase.from('profiles').insert({
+                            id: userId,
                             full_name: `${enquiry.first_name} ${enquiry.last_name}`,
+                            email: enquiry.email,
                             role: 'candidate',
-                        },
-                    })
-
-                    if (authError || !authData.user) {
-                        results.push({ id, status: 'failed', error: 'Failed to create user account' })
-                        continue
+                        })
                     }
 
-                    userId = authData.user.id
-
-                    // Create profile
-                    await supabase.from('profiles').insert({
-                        id: userId,
-                        full_name: `${enquiry.first_name} ${enquiry.last_name}`,
-                        email: enquiry.email,
-                        role: 'candidate',
-                    })
-
-                    // Create credentials
+                    // Create credentials linked to this enquiry
+                    // Only if they don't already have credentials for THIS enquiry (which we checked above in existingCreds)
                     await supabase.from('user_credentials').insert({
                         user_id: userId,
                         admission_enquiry_id: id,
