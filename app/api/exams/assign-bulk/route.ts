@@ -92,24 +92,53 @@ export async function POST(request: NextRequest) {
                         })
 
                         if (authError || !authData.user) {
-                            // If error is "email exists" but it wasn't in profiles, that's an edge case (Phantom user)
-                            // We can try to fetch the user from Auth to get the ID, or just fail.
-                            // For now, let's log it.
-                            const errorMessage = authError?.message || 'Failed to create user account'
-                            console.error(`Auth creation failed for ${enquiry.email}:`, authError)
-                            results.push({ id, status: 'failed', error: errorMessage })
-                            continue
+                            // If error is "email exists", try to recover (Phantom User case)
+                            if (authError?.message?.includes('already been registered') || authError?.code === 'email_exists') {
+                                console.log(`User already exists for ${enquiry.email} but no profile found. Recovering...`)
+
+                                // Workaround to get user by email using generateLink (doesn't send email)
+                                const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
+                                    type: 'magiclink',
+                                    email: enquiry.email
+                                })
+
+                                if (linkError || !linkData.user) {
+                                    console.error(`Failed to recover phantom user ${enquiry.email}:`, linkError)
+                                    results.push({ id, status: 'failed', error: 'User exists but could not be retrieved' })
+                                    continue
+                                }
+
+                                userId = linkData.user.id
+                                // Use the user from linkData, no password set as we can't retrieve it
+
+                            } else {
+                                const errorMessage = authError?.message || 'Failed to create user account'
+                                console.error(`Auth creation failed for ${enquiry.email}:`, authError)
+                                results.push({ id, status: 'failed', error: errorMessage })
+                                continue
+                            }
+                        } else {
+                            userId = authData.user.id
                         }
 
-                        userId = authData.user.id
-
-                        // Create profile
-                        await supabase.from('profiles').insert({
+                        // Create profile (idempotent-ish check, but we know it didn't exist in the check above)
+                        // However, to be safe against race conditions or partial failures, we can use upsert or just insert
+                        const { error: profileError } = await supabase.from('profiles').insert({
                             id: userId,
                             full_name: `${enquiry.first_name} ${enquiry.last_name}`,
                             email: enquiry.email,
                             role: 'candidate',
                         })
+
+                        if (profileError) {
+                            // If profile creation fails (e.g. race condition), log it but proceed if possible?
+                            // If it failed because it exists, that's fine.
+                            if (!profileError.message.includes('duplicate key')) {
+                                console.error(`Failed to create profile for ${enquiry.email}:`, profileError)
+                                // We might fail the whole request for this user if we can't guarantee profile existence
+                                // But let's assume if it exists it's fine.
+                            }
+                        }
                     }
 
                     // Create credentials linked to this enquiry

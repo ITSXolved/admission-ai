@@ -66,10 +66,9 @@ export function EnquiriesClient({ initialEnquiries, initialExamAssignments = {},
                 const { data } = await supabase
                     .from('exam_sessions')
                     .select('id, name, start_date')
-                    // Show sessions that haven't ended yet (end_date >= now)
-                    // We remove .eq('is_active', true) to rely on date validity as requested
-                    .gte('end_date', new Date().toISOString())
-                    .order('start_date', { ascending: true })
+                    // Show all active sessions, regardless of date, so admins can assign them manually
+                    .eq('is_active', true)
+                    .order('start_date', { ascending: false }) // Show newest first
 
                 if (data) setExamSessions(data)
             }
@@ -166,7 +165,17 @@ export function EnquiriesClient({ initialEnquiries, initialExamAssignments = {},
 
             const data = await response.json()
             if (response.ok) {
-                alert(`Successfully assigned test to ${data.results.filter((r: any) => r.status === 'success').length} candidates.`)
+                const results = data.results
+                const successCount = results.filter((r: any) => r.status === 'success').length
+                const failures = results.filter((r: any) => r.status === 'failed')
+
+                if (failures.length > 0) {
+                    const uniqueErrors = Array.from(new Set(failures.map((f: any) => f.error)))
+                    alert(`Assigned to ${successCount} candidates. \nFailed for ${failures.length} candidates.\n\nErrors:\n${uniqueErrors.join('\n')}`)
+                } else {
+                    alert(`Successfully assigned test to ${successCount} candidates.`)
+                }
+
                 setIsAssignModalOpen(false)
                 setSelectedIds(new Set())
                 setSelectedSessionId('')
