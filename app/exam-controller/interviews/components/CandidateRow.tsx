@@ -7,6 +7,7 @@ import Scheduler from './Scheduler'
 import WhatsAppSender from './WhatsAppSender'
 import AdmissionDetails from './AdmissionDetails'
 import WrittenReviewModal from './WrittenReviewModal'
+import RemarksInput from './RemarksInput'
 
 export default function CandidateRow({ candidate }: { candidate: any }) {
     const [isReviewOpen, setIsReviewOpen] = useState(false)
@@ -71,6 +72,12 @@ export default function CandidateRow({ candidate }: { candidate: any }) {
                             installments_count: candidate.installments_count,
                             residence_type: candidate.residence_type
                         }}
+                    />
+                </td>
+                <td className="py-3 px-4">
+                    <RemarksInput
+                        scoreId={candidate.id}
+                        initialRemarks={candidate.remarks}
                     />
                 </td>
                 <td className="py-3 px-4">

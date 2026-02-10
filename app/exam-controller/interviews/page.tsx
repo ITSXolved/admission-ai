@@ -20,7 +20,9 @@ async function getQualifiedCandidates() {
             fee_agreed,
             payment_mode,
             installments_count,
+            installments_count,
             residence_type,
+            remarks,
             admission_enquiries:student_id (
                 first_name,
                 last_name,
@@ -92,13 +94,14 @@ export default async function InterviewsPage() {
                                 <th className="text-left py-3 px-4 text-sm font-semibold text-[#1A1A1A]">Status</th>
                                 <th className="text-left py-3 px-4 text-sm font-semibold text-[#1A1A1A]">Schedule</th>
                                 <th className="text-left py-3 px-4 text-sm font-semibold text-[#1A1A1A]">Admission</th>
+                                <th className="text-left py-3 px-4 text-sm font-semibold text-[#1A1A1A]">Remarks</th>
                                 <th className="text-left py-3 px-4 text-sm font-semibold text-[#1A1A1A]">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {candidates.length === 0 ? (
                                 <tr>
-                                    <td colSpan={8} className="py-8 text-center text-gray-500">
+                                    <td colSpan={9} className="py-8 text-center text-gray-500">
                                         No qualified candidates found yet.
                                     </td>
                                 </tr>
