@@ -11,7 +11,7 @@
 CREATE TYPE user_role AS ENUM ('exam_controller', 'candidate', 'super_admin');
 CREATE TYPE exam_status AS ENUM ('not_started', 'in_progress', 'completed', 'expired');
 CREATE TYPE student_status AS ENUM ('applied', 'appeared_test', 'qualified', 'waiting_list', 'rejected', 'called_for_interview', 'admitted');
-CREATE TYPE session_type AS ENUM ('mcq', 'written', 'cognitive');
+CREATE TYPE session_type AS ENUM ('mcq', 'written', 'cognitive', 'fill_in_the_blank', 'pick_and_place');
 CREATE TYPE cognitive_test_type AS ENUM ('digit_span_forward', 'digit_span_backward', 'digit_span_sequencing', 'flanker_task', 'set_shifting');
 CREATE TYPE language_type AS ENUM ('english', 'hindi', 'gujarati');
 

@@ -58,11 +58,20 @@ export async function POST(request: Request) {
 
         const { data: allSessionQuestions } = await supabase
             .from('exam_questions')
-            .select('id, marks')
+            .select('id, marks, question_bank_id') // Added question_bank_id
             .in('sub_session_id', subSessionIds)
 
-        const totalPossibleMarks = allSessionQuestions?.reduce((sum, q) => sum + (Number(q.marks) || 0), 0) || 0
-        console.log('Total Possible Marks (Calculated via SubSessions):', totalPossibleMarks)
+        // Deduplicate questions for Total Marks Calculation
+        // Use a Map to keep unique question_bank_id, taking the one with marks (if varying) or just first.
+        const uniqueQuestionsMap = new Map()
+        allSessionQuestions?.forEach(q => {
+            if (q.question_bank_id && !uniqueQuestionsMap.has(q.question_bank_id)) {
+                uniqueQuestionsMap.set(q.question_bank_id, q)
+            }
+        })
+
+        const totalPossibleMarks = Array.from(uniqueQuestionsMap.values()).reduce((sum: number, q: any) => sum + (Number(q.marks) || 0), 0) || 0
+        console.log('Total Possible Marks (Calculated via SubSessions, Deduplicated):', totalPossibleMarks)
 
         let mcqScore = 0
         // Fetch all questions for this session to verify answers

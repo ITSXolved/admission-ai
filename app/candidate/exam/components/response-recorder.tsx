@@ -70,12 +70,10 @@ export function ResponseRecorder({ attemptId, question, subjectName, initialAnsw
     }
 
     if (question.question_bank.type === 'mcq') {
-        const options = question.question_bank.options // Assuming JSONB options: { "a": "Option A", "b": "Option B" } or array
-        // We need to parse options structure. Usually it could be an object or array.
-        // Let's assume it's an object keys or a specific structure. 
-        // Based on typical usage: keys are 'a', 'b', 'c', 'd' or similar.
+        const options = question.question_bank.options
 
-        let optionEntries: [string, string][] = []
+        // entries...
+        let optionEntries: [string, any][] = []
         if (options && typeof options === 'object') {
             optionEntries = Object.entries(options)
         }
@@ -83,15 +81,31 @@ export function ResponseRecorder({ attemptId, question, subjectName, initialAnsw
         return (
             <div className="space-y-4 mt-6">
                 <RadioGroup value={answer as string} onValueChange={handleValueChange}>
-                    {optionEntries.map(([key, value]) => (
-                        <div key={key} className={`flex items-center space-x-2 border p-4 rounded-lg cursor-pointer transition-colors ${answer === key ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:bg-gray-50'}`}>
-                            <RadioGroupItem value={key} id={`option-${key}`} />
-                            <Label htmlFor={`option-${key}`} className="flex-1 cursor-pointer font-normal text-base">
-                                <span className="font-bold mr-2 uppercase">{key}.</span>
-                                {value as string}
-                            </Label>
-                        </div>
-                    ))}
+                    {optionEntries.map(([key, value]) => {
+                        const optionText = typeof value === 'string' ? value : value.text
+                        const optionImage = typeof value === 'string' ? null : value.image
+
+                        return (
+                            <div key={key} className={`flex items-start space-x-3 border p-4 rounded-lg cursor-pointer transition-colors ${answer === key ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:bg-gray-50'}`}>
+                                <RadioGroupItem value={key} id={`option-${key}`} className="mt-1" />
+                                <div className="flex-1">
+                                    <Label htmlFor={`option-${key}`} className="cursor-pointer font-normal text-base block">
+                                        <span className="font-bold mr-2 uppercase">{key}.</span>
+                                        {optionText}
+                                    </Label>
+                                    {optionImage && (
+                                        <div className="mt-2">
+                                            <img
+                                                src={optionImage}
+                                                alt={`Option ${key}`}
+                                                className="max-h-40 rounded border border-gray-200 object-contain"
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )
+                    })}
                 </RadioGroup>
 
                 <div className="flex items-center justify-end text-xs text-gray-400 min-h-[20px]">
@@ -102,7 +116,7 @@ export function ResponseRecorder({ attemptId, question, subjectName, initialAnsw
         )
     }
 
-    if (question.question_bank.type === 'written') {
+    if (['written', 'fill_in_the_blank', 'pick_and_place'].includes(question.question_bank.type)) {
         const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
             const file = e.target.files?.[0]
             if (!file) return

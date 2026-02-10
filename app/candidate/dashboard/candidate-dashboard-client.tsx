@@ -199,7 +199,7 @@ export default function CandidateDashboardClient({
 
                         {/* Action Button */}
                         <div className="flex flex-col sm:flex-row gap-4">
-                            {(!attempt || attempt.status === 'in_progress' || attempt.status === 'not_started') && isExamActive ? (
+                            {((attempt && (attempt.status === 'in_progress' || attempt.status === 'not_started')) || (!attempt && isExamActive)) ? (
                                 <button
                                     onClick={handleStartExam}
                                     disabled={isLoading}

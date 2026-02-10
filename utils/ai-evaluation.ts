@@ -25,7 +25,7 @@ export async function evaluateWrittenAnswer(
     // 2. Fetch Question Text
     const { data: questionData, error: qError } = await supabase
         .from('exam_questions')
-        .select('*, question_bank(question_text)')
+        .select('*, question_bank(question_text, answer_key)')
         .eq('id', questionId)
         .single()
 
@@ -38,6 +38,7 @@ export async function evaluateWrittenAnswer(
     const validMarks = questionData.marks || totalMarks || 6
 
     const questionText = questionData.question_bank?.question_text || 'Evaluate the handwritten answer.'
+    const answerKey = questionData.question_bank?.answer_key || ''
 
     // 3. Prepare Image Parts (Upload to File API)
     const imagePartsProm = imageUrls.map(async (url) => {
@@ -73,6 +74,7 @@ export async function evaluateWrittenAnswer(
     const promptText = `
     You are an expert strict examiner.
     Question: "${questionText}"
+    ${answerKey ? `Answer Key / Model Answer: "${answerKey}"\n    (Use this answer key to verify the correctness of the student's answer. If the student's answer matches the key concepts, award marks accordingly. If it contradicts, deduct marks.)` : ''}
     Maximum Marks for this Question: ${validMarks}
     Language: ${language}
 

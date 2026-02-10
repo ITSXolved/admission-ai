@@ -24,6 +24,15 @@ export function QuestionRenderer({ question, questionIndex, totalQuestions }: Qu
             </CardHeader>
             <CardContent>
                 <div className="mt-4">
+                    {question_bank.question_image_url && (
+                        <div className="mb-4">
+                            <img
+                                src={question_bank.question_image_url}
+                                alt="Question Image"
+                                className="max-h-64 object-contain rounded-lg border border-gray-200"
+                            />
+                        </div>
+                    )}
                     <h3 className="text-lg font-medium text-gray-900 leading-relaxed">
                         {question_bank.question_text}
                     </h3>

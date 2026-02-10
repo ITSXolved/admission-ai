@@ -2,13 +2,20 @@ import { requireAuth } from '@/lib/auth/helpers'
 import { createClient } from '@/lib/supabase/server'
 import QuestionsClient from './questions-client'
 
-async function getQuestions() {
+async function getQuestions(examSessionId?: string) {
   const supabase = await createClient() // Fetch Questions from Bank
-  const { data: questions, error: questionsError } = await supabase
+
+  let query = supabase
     .from('question_bank')
-    .select('*')
+    .select('*, exam_questions(sub_session_id)')
     .order('created_at', { ascending: false })
     .limit(50)
+
+  if (examSessionId) {
+    query = query.eq('exam_session_id', examSessionId)
+  }
+
+  const { data: questions, error: questionsError } = await query
 
   if (questionsError) {
     console.error('Error fetching questions:', questionsError)
@@ -57,9 +64,16 @@ async function getQuestions() {
   }
 }
 
-export default async function QuestionsPage() {
+export default async function QuestionsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}) {
   await requireAuth(['exam_controller', 'super_admin'])
-  const { questions, subjects, subSessions, examSessions, defaultSubSessionId } = await getQuestions()
+  const resolvedParams = await searchParams
+  const examSessionId = resolvedParams.exam_session_id as string
+
+  const { questions, subjects, subSessions, examSessions, defaultSubSessionId } = await getQuestions(examSessionId)
 
   return (
     <QuestionsClient

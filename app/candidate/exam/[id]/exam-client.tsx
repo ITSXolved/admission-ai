@@ -40,6 +40,8 @@ export default function ExamClient({ session, attempt, subSessions }: ExamClient
     // (Cognitive tests are handled separately usually)
     const allQuestions = useMemo(() => {
         const questions: any[] = []
+        const addedQuestionBankIds = new Set<string>()
+
         if (!subSessions) return []
 
         subSessions.forEach(sub => {
@@ -50,26 +52,32 @@ export default function ExamClient({ session, attempt, subSessions }: ExamClient
                 sub.exam_subjects.forEach((subject: any) => {
                     if (subject.exam_questions) {
                         subject.exam_questions.forEach((q: any) => {
-                            questions.push({
-                                ...q,
-                                sub_session_name: sub.name,
-                                subject_name: subject.name
-                            })
+                            // Check for duplicate generic questions or same question in different subjects
+                            const qBankId = q.question_bank?.id
+                            if (qBankId && !addedQuestionBankIds.has(qBankId)) {
+                                questions.push({
+                                    ...q,
+                                    sub_session_name: sub.name,
+                                    subject_name: subject.name
+                                })
+                                addedQuestionBankIds.add(qBankId)
+                            }
                         })
                     }
                 })
             }
 
-            // 2. Questions linked directly to Sub-Session (without Subject)
             if (sub.exam_questions) {
                 sub.exam_questions.forEach((q: any) => {
-                    // Check if already added (in case it has both IDs)
-                    if (!questions.find(existing => existing.id === q.id)) {
+                    // Check if already added (via Subject or previous iteration)
+                    const qBankId = q.question_bank?.id
+                    if (qBankId && !addedQuestionBankIds.has(qBankId)) {
                         questions.push({
                             ...q,
                             sub_session_name: sub.name,
                             subject_name: 'General'
                         })
+                        addedQuestionBankIds.add(qBankId)
                     }
                 })
             }
@@ -206,9 +214,9 @@ export default function ExamClient({ session, attempt, subSessions }: ExamClient
     const currentQuestion = allQuestions[currentQuestionIndex]
 
     return (
-        <div className="min-h-screen bg-[#FAFAF8] flex flex-col">
+        <div className="h-screen flex flex-col bg-[#FAFAF8] overflow-hidden">
             {/* Header / Top Bar */}
-            <header className="bg-white border-b border-gray-200 px-6 py-4 sticky top-0 z-10 shadow-sm">
+            <header className="bg-white border-b border-gray-200 px-6 py-4 flex-none z-10 shadow-sm">
                 <div className="max-w-7xl mx-auto flex items-center justify-between">
                     <div>
                         <h1 className="text-xl font-bold text-gray-900">{session.name}</h1>
@@ -218,8 +226,8 @@ export default function ExamClient({ session, attempt, subSessions }: ExamClient
                     </div>
 
                     <div className="flex items-center gap-6">
-                        <div className={`flex items - center gap - 2 px - 4 py - 2 rounded - lg font - mono text - xl font - bold ${timeLeft < 300 ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-700'
-                            } `}>
+                        <div className={`flex items-center gap-2 px-4 py-2 rounded-lg font-mono text-xl font-bold ${timeLeft < 300 ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-700'
+                            }`}>
                             <Clock className="h-5 w-5" />
                             {formatTime(timeLeft)}
                         </div>
@@ -237,45 +245,47 @@ export default function ExamClient({ session, attempt, subSessions }: ExamClient
                 </div>
             </header>
 
-            {/* Main Content Area */}
-            <main className="flex-1 max-w-4xl mx-auto w-full p-6 pb-24">
-                {!responsesLoaded ? (
-                    <div className="flex justify-center items-center h-64">
-                        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-                        <span className="ml-2 text-gray-500">Loading your exam...</span>
-                    </div>
-                ) : allQuestions.length === 0 ? (
-                    <div className="text-center p-12">
-                        <AlertCircle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
-                        <h2 className="text-xl font-semibold text-gray-900">No questions found</h2>
-                        <p className="text-gray-500">Please contact the administrator.</p>
-                    </div>
-                ) : (
-                    <div className="space-y-6">
-                        {/* Question Area */}
-                        <QuestionRenderer
-                            question={currentQuestion}
-                            questionIndex={currentQuestionIndex}
-                            totalQuestions={allQuestions.length}
-                        />
-
-                        {/* Response Area */}
-                        <div className="bg-white rounded-lg border shadow-sm p-6">
-                            <h3 className="text-md font-semibold text-gray-800 mb-4">Your Answer</h3>
-                            <ResponseRecorder
-                                attemptId={attempt.id}
-                                question={currentQuestion}
-                                subjectName={currentQuestion.subject_name || 'English'}
-                                initialAnswer={responses[currentQuestion.id]}
-                                onAnswerSaved={handleAnswerSaved}
-                            />
+            {/* Main Content Area - Scrollable */}
+            <main className="flex-1 overflow-y-auto w-full">
+                <div className="max-w-4xl mx-auto p-6 pb-24">
+                    {!responsesLoaded ? (
+                        <div className="flex justify-center items-center h-64">
+                            <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+                            <span className="ml-2 text-gray-500">Loading your exam...</span>
                         </div>
-                    </div>
-                )}
+                    ) : allQuestions.length === 0 ? (
+                        <div className="text-center p-12">
+                            <AlertCircle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
+                            <h2 className="text-xl font-semibold text-gray-900">No questions found</h2>
+                            <p className="text-gray-500">Please contact the administrator.</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-6">
+                            {/* Question Area */}
+                            <QuestionRenderer
+                                question={currentQuestion}
+                                questionIndex={currentQuestionIndex}
+                                totalQuestions={allQuestions.length}
+                            />
+
+                            {/* Response Area */}
+                            <div className="bg-white rounded-lg border shadow-sm p-6">
+                                <h3 className="text-md font-semibold text-gray-800 mb-4">Your Answer</h3>
+                                <ResponseRecorder
+                                    attemptId={attempt.id}
+                                    question={currentQuestion}
+                                    subjectName={currentQuestion.subject_name || 'English'}
+                                    initialAnswer={responses[currentQuestion.id]}
+                                    onAnswerSaved={handleAnswerSaved}
+                                />
+                            </div>
+                        </div>
+                    )}
+                </div>
             </main>
 
             {/* Footer Navigation */}
-            <footer className="bg-white border-t border-gray-200 px-6 py-4 sticky bottom-0 z-10">
+            <footer className="bg-white border-t border-gray-200 px-6 py-4 flex-none z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
                 <div className="max-w-4xl mx-auto flex items-center justify-between">
                     <Button
                         variant="outline"

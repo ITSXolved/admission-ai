@@ -30,7 +30,9 @@ export default function ExamConfigClient({ initialSessions }: ExamConfigClientPr
         subSessions: {
             mcq: 60,
             written: 20,
-            cognitive: 20
+            cognitive: 20,
+            fill_in_the_blank: 0,
+            pick_and_place: 0
         }
     })
 
@@ -46,11 +48,26 @@ export default function ExamConfigClient({ initialSessions }: ExamConfigClientPr
             return
         }
 
+        // Validate dates
+        if (!newSession.start_date || !newSession.end_date) {
+            alert('Please select both start and end dates.')
+            setIsCreating(false)
+            return
+        }
+
+        // Check for online status
+        if (!navigator.onLine) {
+            alert('You appear to be offline. Please check your internet connection.')
+            setIsCreating(false)
+            return
+        }
+
         try {
             let sessionId = editingSessionId
 
             if (editingSessionId) {
                 // UPDATE Existing Session
+                console.log('Updating session:', newSession)
                 const { error: updateError } = await supabase
                     .from('exam_sessions')
                     .update({
@@ -64,7 +81,10 @@ export default function ExamConfigClient({ initialSessions }: ExamConfigClientPr
                     })
                     .eq('id', editingSessionId)
 
-                if (updateError) throw updateError
+                if (updateError) {
+                    console.error('Error updating session:', updateError)
+                    throw updateError
+                }
 
                 // Update Sub-Sessions (Simpler to delete and recreate or just update weightages)
                 // For simplicity, we'll update weightages one by one
@@ -74,19 +94,27 @@ export default function ExamConfigClient({ initialSessions }: ExamConfigClientPr
                 const updates = [
                     { type: 'mcq', weight: newSession.subSessions.mcq },
                     { type: 'written', weight: newSession.subSessions.written },
-                    { type: 'cognitive', weight: newSession.subSessions.cognitive }
+                    { type: 'cognitive', weight: newSession.subSessions.cognitive },
+                    { type: 'fill_in_the_blank', weight: newSession.subSessions.fill_in_the_blank },
+                    { type: 'pick_and_place', weight: newSession.subSessions.pick_and_place }
                 ]
 
                 for (const up of updates) {
-                    await supabase
+                    const { error: subUpdateError } = await supabase
                         .from('exam_sub_sessions')
                         .update({ weightage: up.weight })
                         .eq('exam_session_id', editingSessionId)
                         .eq('session_type', up.type) // Assuming session_type is unique per session
+
+                    if (subUpdateError) {
+                        console.error(`Error updating sub-session ${up.type}:`, subUpdateError)
+                        throw subUpdateError
+                    }
                 }
 
             } else {
                 // CREATE New Session
+                console.log('Creating new session:', newSession)
                 const { data: sessionData, error: sessionError } = await supabase
                     .from('exam_sessions')
                     .insert([
@@ -104,7 +132,15 @@ export default function ExamConfigClient({ initialSessions }: ExamConfigClientPr
                     .select()
                     .single()
 
-                if (sessionError) throw sessionError
+                if (sessionError) {
+                    console.error('Error inserting exam_sessions:', sessionError)
+                    throw sessionError
+                }
+
+                if (!sessionData) {
+                    throw new Error('Session created but no data returned.')
+                }
+
                 sessionId = sessionData.id
 
                 // Create Sub-Sessions
@@ -129,6 +165,20 @@ export default function ExamConfigClient({ initialSessions }: ExamConfigClientPr
                         name: 'Cognitive Assessment',
                         weightage: newSession.subSessions.cognitive,
                         sequence_order: 3
+                    },
+                    {
+                        exam_session_id: sessionId,
+                        session_type: 'fill_in_the_blank',
+                        name: 'Fill in the Blank',
+                        weightage: newSession.subSessions.fill_in_the_blank,
+                        sequence_order: 4
+                    },
+                    {
+                        exam_session_id: sessionId,
+                        session_type: 'pick_and_place',
+                        name: 'Pick and Place',
+                        weightage: newSession.subSessions.pick_and_place,
+                        sequence_order: 5
                     }
                 ]
 
@@ -136,7 +186,12 @@ export default function ExamConfigClient({ initialSessions }: ExamConfigClientPr
                     .from('exam_sub_sessions')
                     .insert(subSessionsData)
 
-                if (subError) throw subError
+                if (subError) {
+                    console.error('Error inserting exam_sub_sessions:', subError)
+                    // Try to cleanup the session if sub-sessions fail? 
+                    // For now just throw
+                    throw subError
+                }
             }
 
             // Fetch complete session to update UI
@@ -153,7 +208,10 @@ export default function ExamConfigClient({ initialSessions }: ExamConfigClientPr
                 .eq('id', sessionId)
                 .single()
 
-            if (fetchError) throw fetchError
+            if (fetchError) {
+                console.error('Error fetching complete session:', fetchError)
+                throw fetchError
+            }
 
             // Update UI
             if (editingSessionId) {
@@ -169,7 +227,14 @@ export default function ExamConfigClient({ initialSessions }: ExamConfigClientPr
 
         } catch (error: any) {
             console.error('Error saving session:', error)
-            alert('Failed to save session: ' + error.message)
+            // Check for cause if available (e.g. from fetch)
+            if (error.cause) {
+                console.error('Error cause:', error.cause)
+            }
+            if (error.stack) {
+                console.error('Error stack:', error.stack)
+            }
+            alert('Failed to save session: ' + (error.message || 'Unknown error. Check console for details.'))
         } finally {
             setIsCreating(false)
         }
@@ -189,7 +254,9 @@ export default function ExamConfigClient({ initialSessions }: ExamConfigClientPr
             subSessions: {
                 mcq: 60,
                 written: 20,
-                cognitive: 20
+                cognitive: 20,
+                fill_in_the_blank: 0,
+                pick_and_place: 0
             }
         })
     }
@@ -201,6 +268,8 @@ export default function ExamConfigClient({ initialSessions }: ExamConfigClientPr
         const mcq = session.exam_sub_sessions.find((s: any) => s.session_type === 'mcq')?.weightage || 0
         const written = session.exam_sub_sessions.find((s: any) => s.session_type === 'written')?.weightage || 0
         const cognitive = session.exam_sub_sessions.find((s: any) => s.session_type === 'cognitive')?.weightage || 0
+        const fill_in_the_blank = session.exam_sub_sessions.find((s: any) => s.session_type === 'fill_in_the_blank')?.weightage || 0
+        const pick_and_place = session.exam_sub_sessions.find((s: any) => s.session_type === 'pick_and_place')?.weightage || 0
 
         setNewSession({
             name: session.name,
@@ -213,7 +282,9 @@ export default function ExamConfigClient({ initialSessions }: ExamConfigClientPr
             subSessions: {
                 mcq,
                 written,
-                cognitive
+                cognitive,
+                fill_in_the_blank,
+                pick_and_place
             }
         })
         setIsCreateModalOpen(true)
@@ -554,6 +625,36 @@ export default function ExamConfigClient({ initialSessions }: ExamConfigClientPr
                                                 onChange={(e) => setNewSession({
                                                     ...newSession,
                                                     subSessions: { ...newSession.subSessions, cognitive: parseInt(e.target.value || '0') }
+                                                })}
+                                                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C9A961] focus:border-transparent"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-medium text-gray-500 mb-1">Fill Blanks</label>
+                                            <input
+                                                type="number"
+                                                required
+                                                min="0"
+                                                max="100"
+                                                value={newSession.subSessions.fill_in_the_blank}
+                                                onChange={(e) => setNewSession({
+                                                    ...newSession,
+                                                    subSessions: { ...newSession.subSessions, fill_in_the_blank: parseInt(e.target.value || '0') }
+                                                })}
+                                                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C9A961] focus:border-transparent"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-medium text-gray-500 mb-1">Pick & Place</label>
+                                            <input
+                                                type="number"
+                                                required
+                                                min="0"
+                                                max="100"
+                                                value={newSession.subSessions.pick_and_place}
+                                                onChange={(e) => setNewSession({
+                                                    ...newSession,
+                                                    subSessions: { ...newSession.subSessions, pick_and_place: parseInt(e.target.value || '0') }
                                                 })}
                                                 className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C9A961] focus:border-transparent"
                                             />
