@@ -758,7 +758,7 @@ export default function QuestionsClient({ initialQuestions, subjects, subSession
                             {newQuestion.question_type === 'mcq' && (
                                 <div className="space-y-3 p-4 bg-gray-50 rounded-lg">
                                     <h4 className="text-sm font-semibold text-gray-900">Options</h4>
-                                    <div className="grid grid-cols-2 gap-3">
+                                    <div className="grid grid-cols-1 gap-3">
                                         {['A', 'B', 'C', 'D'].map((opt) => (
                                             <div key={opt}>
                                                 <label className="block text-xs font-medium text-gray-500 mb-1">Option {opt}</label>
