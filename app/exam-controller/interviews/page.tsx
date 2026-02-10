@@ -1,6 +1,7 @@
 import { requireAuth } from '@/lib/auth/helpers'
 import { createClient } from '@/lib/supabase/server'
-import CandidateRow from './components/CandidateRow'
+
+
 
 async function getQualifiedCandidates() {
     const supabase = await createClient()
@@ -27,7 +28,8 @@ async function getQualifiedCandidates() {
                 first_name,
                 last_name,
                 primary_mobile,
-                email
+                email,
+                applying_grade
             )
         `)
         .eq('is_qualified', true)
@@ -67,53 +69,11 @@ async function getQualifiedCandidates() {
     }))
 }
 
+import InterviewsClient from './interviews-client'
+
 export default async function InterviewsPage() {
     await requireAuth(['exam_controller', 'super_admin'])
     const candidates = await getQualifiedCandidates()
 
-    return (
-        <div className="p-8">
-            <div className="mb-8">
-                <h1 className="text-4xl font-bold text-[#1A1A1A] mb-2">
-                    Interview Management
-                </h1>
-                <p className="text-[#6B6B6B]">
-                    Manage interviews for qualified candidates ({candidates.length})
-                </p>
-            </div>
-
-            <div className="bg-white rounded-xl shadow-md overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full">
-                        <thead className="bg-[#FAFAF8] border-b border-[#E5E7EB]">
-                            <tr>
-                                <th className="text-left py-3 px-4 text-sm font-semibold text-[#1A1A1A]">Candidate</th>
-                                <th className="text-left py-3 px-4 text-sm font-semibold text-[#1A1A1A]">Exam</th>
-                                <th className="text-left py-3 px-4 text-sm font-semibold text-[#1A1A1A]">Written %</th>
-                                <th className="text-left py-3 px-4 text-sm font-semibold text-[#1A1A1A]">Interview Score</th>
-                                <th className="text-left py-3 px-4 text-sm font-semibold text-[#1A1A1A]">Status</th>
-                                <th className="text-left py-3 px-4 text-sm font-semibold text-[#1A1A1A]">Schedule</th>
-                                <th className="text-left py-3 px-4 text-sm font-semibold text-[#1A1A1A]">Admission</th>
-                                <th className="text-left py-3 px-4 text-sm font-semibold text-[#1A1A1A]">Remarks</th>
-                                <th className="text-left py-3 px-4 text-sm font-semibold text-[#1A1A1A]">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {candidates.length === 0 ? (
-                                <tr>
-                                    <td colSpan={9} className="py-8 text-center text-gray-500">
-                                        No qualified candidates found yet.
-                                    </td>
-                                </tr>
-                            ) : (
-                                candidates.map((candidate: any) => (
-                                    <CandidateRow key={candidate.id} candidate={candidate} />
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    )
+    return <InterviewsClient initialCandidates={candidates} />
 }
