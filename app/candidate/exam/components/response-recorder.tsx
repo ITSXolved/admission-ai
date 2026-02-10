@@ -39,7 +39,7 @@ export function ResponseRecorder({ attemptId, question, subjectName, initialAnsw
 
         setIsSaving(true)
         try {
-            if (question.question_bank.type === 'mcq') {
+            if (question.question_bank.question_type === 'mcq') {
                 const { error } = await supabase
                     .from('student_mcq_responses')
                     .upsert({
@@ -69,7 +69,7 @@ export function ResponseRecorder({ attemptId, question, subjectName, initialAnsw
         handleSave(val)
     }
 
-    if (question.question_bank.type === 'mcq') {
+    if (question.question_bank.question_type === 'mcq') {
         const options = question.question_bank.options
 
         // entries...
@@ -116,7 +116,7 @@ export function ResponseRecorder({ attemptId, question, subjectName, initialAnsw
         )
     }
 
-    if (['written', 'fill_in_the_blank', 'pick_and_place'].includes(question.question_bank.type)) {
+    if (['written', 'fill_in_the_blank', 'pick_and_place'].includes(question.question_bank.question_type)) {
         const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
             const file = e.target.files?.[0]
             if (!file) return
@@ -315,7 +315,7 @@ export function ResponseRecorder({ attemptId, question, subjectName, initialAnsw
 
     return (
         <div className="mt-6 p-4 border border-dashed border-gray-300 rounded-lg text-center text-gray-500">
-            Response type for '{question.question_bank.type}' is under development.
+            Response type for '{question.question_bank.question_type}' is under development.
         </div>
     )
 }

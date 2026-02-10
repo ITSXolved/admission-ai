@@ -16,7 +16,7 @@ interface Question {
     question_bank: {
         id: string
         question: string
-        type: 'mcq' | 'descriptive' | 'written'
+        question_type: 'mcq' | 'descriptive' | 'written'
         options?: any
         marks: number
         subject?: string

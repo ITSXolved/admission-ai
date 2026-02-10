@@ -39,8 +39,8 @@ export function QuestionRenderer({ question, questionIndex, totalQuestions }: Qu
 
                     {/* Render basic instructions based on type */}
                     <p className="mt-2 text-sm text-gray-500 italic">
-                        {question_bank.type === 'mcq' && 'Select the correct option below.'}
-                        {question_bank.type === 'written' && 'Type your answer in the box below.'}
+                        {question_bank.question_type === 'mcq' && 'Select the correct option below.'}
+                        {question_bank.question_type === 'written' && 'Type your answer in the box below.'}
                     </p>
                 </div>
             </CardContent>
