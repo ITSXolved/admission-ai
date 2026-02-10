@@ -36,6 +36,16 @@ const TEMPLATES = [
         text: "Salam {name}, We are pleased to inform you that you have been SELECTED for admission at AILT Global Academy! Please proceed with the admission formalities by visiting the campus."
     },
     {
+        id: 'waiting_list',
+        title: 'Waiting List Update',
+        text: "Salam {name}, You have been placed on the Waiting List for admission at AILT Global Academy. We will notify you if a seat becomes available."
+    },
+    {
+        id: 'rejected',
+        title: 'Admission Status Update',
+        text: "Salam {name}, We regret to inform you that you have not been selected for admission at AILT Global Academy at this time. We wish you the best in your future endeavors."
+    },
+    {
         id: 'reminder',
         title: 'Interview Reminder',
         text: "Salam {name}, This is a reminder for your upcoming interview at AILT Global Academy scheduled on {date}."
