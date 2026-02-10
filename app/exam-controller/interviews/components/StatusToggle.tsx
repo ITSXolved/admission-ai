@@ -94,7 +94,7 @@ export default function StatusToggle({
                     />
                     <div
                         style={{ top: coords.top, left: coords.left }}
-                        className="fixed z-50 w-32 bg-white shadow-lg rounded-md ring-1 ring-black ring-opacity-5 focus:outline-none animate-in fade-in zoom-in-95 duration-100"
+                        className="absolute z-50 w-32 bg-white shadow-lg rounded-md ring-1 ring-black ring-opacity-5 focus:outline-none animate-in fade-in zoom-in-95 duration-100"
                     >
                         <div className="py-1">
                             {STATUS_OPTIONS.map((option) => (

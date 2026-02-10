@@ -210,12 +210,9 @@ export default function QuestionsClient({ initialQuestions, subjects, subSession
             }
 
             const payload: any = {
-                // Schema requires 'type' (not null), mapping from local state
-                type: newQuestion.question_type,
                 question_text: newQuestion.question_text,
-                question_type: newQuestion.question_type, // Keeping both for consistency if needed
+                question_type: newQuestion.question_type,
                 difficulty_level: newQuestion.difficulty_level,
-                difficulty: newQuestion.difficulty_level, // Keeping both for consistency
                 marks: newQuestion.marks,
                 // Only include subject_id if it's selected
                 ...(finalSubjectId && { subject_id: finalSubjectId }),
@@ -259,20 +256,32 @@ export default function QuestionsClient({ initialQuestions, subjects, subSession
 
                 if (error) throw error
 
-                // Link to Exam Session (if selected and NOT a generic type)
-                if (selectedSubSessionId && !selectedSubSessionId.startsWith('type:')) {
+                // Link to Exam Session
+                let linkSubSessionId = selectedSubSessionId;
+
+                // If generic or not selected, try to find the correct sub-session for this exam and type
+                if ((!linkSubSessionId || linkSubSessionId.startsWith('type:')) && finalExamSessionId) {
+                    const matchingSubSession = subSessions.find(s =>
+                        s.exam_session_id === finalExamSessionId &&
+                        s.session_type === newQuestion.question_type
+                    );
+                    if (matchingSubSession) {
+                        linkSubSessionId = matchingSubSession.id;
+                    }
+                }
+
+                if (linkSubSessionId && !linkSubSessionId.startsWith('type:')) {
                     const { error: linkError } = await supabase
                         .from('exam_questions')
                         .insert([{
                             question_bank_id: data.id,
-                            sub_session_id: selectedSubSessionId,
+                            sub_session_id: linkSubSessionId,
                             subject_id: finalSubjectId || null,
                             marks: newQuestion.marks || 1
                         }])
 
                     if (linkError) {
                         console.error('Error linking question to exam:', linkError)
-                        // Non-fatal error, but good to log
                     }
                 }
 
@@ -649,13 +658,15 @@ export default function QuestionsClient({ initialQuestions, subjects, subSession
                                         <option value="">Select Type or Test</option>
 
                                         {/* Always Show Generic Types */}
-                                        <optgroup label="Generic Question Types">
-                                            <option value="type:mcq">Multiple Choice (MCQ)</option>
-                                            <option value="type:written">Written / Subjective</option>
-                                            <option value="type:fill_in_the_blank">Fill in the Blank</option>
-                                            <option value="type:pick_and_place">Pick and Place</option>
-                                            <option value="type:cognitive">Cognitive (Game)</option>
-                                        </optgroup>
+                                        {!selectedExamSessionId && (
+                                            <optgroup label="Generic Question Types">
+                                                <option value="type:mcq">Multiple Choice (MCQ)</option>
+                                                <option value="type:written">Written / Subjective</option>
+                                                <option value="type:fill_in_the_blank">Fill in the Blank</option>
+                                                <option value="type:pick_and_place">Pick and Place</option>
+                                                <option value="type:cognitive">Cognitive (Game)</option>
+                                            </optgroup>
+                                        )}
 
                                         {/* Show Assessments based on selection */}
                                         <optgroup label={selectedExamSessionId ? "Assessments for Selected Session" : "All Assessments"}>
