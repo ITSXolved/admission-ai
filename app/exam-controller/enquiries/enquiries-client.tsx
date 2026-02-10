@@ -706,7 +706,7 @@ Password: (Check your email or reset below)
                                     </td>
                                     <td className="py-3 px-4 text-sm text-[#6B6B6B]">
                                         {examSchedules[enquiry.id] ? (
-                                            <div className="flex flex-col">
+                                            <div className="flex flex-col" suppressHydrationWarning>
                                                 <span className="font-medium text-[#1A1A1A]">
                                                     {new Date(examSchedules[enquiry.id]!).toLocaleDateString('en-IN', {
                                                         month: 'short',
@@ -714,7 +714,7 @@ Password: (Check your email or reset below)
                                                         year: 'numeric'
                                                     })}
                                                 </span>
-                                                <span className="text-xs text-[#6B6B6B]">
+                                                <span className="text-xs text-[#6B6B6B]" suppressHydrationWarning>
                                                     {new Date(examSchedules[enquiry.id]!).toLocaleTimeString('en-IN', {
                                                         hour: '2-digit',
                                                         minute: '2-digit',
