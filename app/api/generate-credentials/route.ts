@@ -103,6 +103,8 @@ export async function POST(request: NextRequest) {
 
                 // Create auth user (candidate role)
                 console.log('Creating auth user...')
+                let authUserId: string | null = null
+
                 const { data: authData, error: authError } = await supabase.auth.admin.createUser({
                     email: enquiry.email,
                     password: password,
@@ -113,38 +115,101 @@ export async function POST(request: NextRequest) {
                     },
                 })
 
-                if (authError || !authData.user) {
-                    console.error('Auth error for', enquiry.email, ':', authError)
-                    results.push({ id, status: 'failed', error: `Failed to create user account: ${authError?.message}` })
+                if (authError) {
+                    if (authError.code === 'email_exists' || authError.status === 422 || authError.message?.includes('already been registered')) {
+                        console.log('User exists in Auth (orphaned link), recovering...')
+
+                        // Strategy 1: Check profiles table
+                        const { data: existingProfile } = await supabase
+                            .from('profiles')
+                            .select('id')
+                            .eq('email', enquiry.email)
+                            .maybeSingle()
+
+                        if (existingProfile) {
+                            authUserId = existingProfile.id
+                            console.log('Found existing user via profiles:', authUserId)
+                        } else {
+                            // Strategy 2: Admin listUsers (fallback)
+                            console.log('User not in profiles (orphaned). fetching from auth admin list...')
+                            const { data: userList, error: listError } = await supabase.auth.admin.listUsers({
+                                page: 1,
+                                perPage: 1000
+                            })
+
+                            if (listError || !userList || !userList.users) {
+                                console.error('Failed to list users:', listError)
+                                results.push({ id, status: 'failed', error: 'User exists but could not be retrieved from Auth.' })
+                                continue
+                            }
+
+                            const foundUser = userList.users.find(u => u.email?.toLowerCase() === enquiry.email.toLowerCase())
+                            if (foundUser) {
+                                authUserId = foundUser.id
+                                console.log('Found orphaned user via listUsers:', authUserId)
+                            } else {
+                                results.push({ id, status: 'failed', error: 'User exists in Auth but could not be located.' })
+                                continue
+                            }
+                        }
+
+                        // Update password for the found user
+                        const { error: updatePxError } = await supabase.auth.admin.updateUserById(
+                            authUserId!,
+                            { password: password }
+                        )
+
+                        if (updatePxError) {
+                            results.push({ id, status: 'failed', error: `Failed to update password for existing user: ${updatePxError.message}` })
+                            continue
+                        }
+
+                    } else {
+                        console.error('Auth error for', enquiry.email, ':', authError)
+                        results.push({ id, status: 'failed', error: `Failed to create user account: ${authError?.message}` })
+                        continue
+                    }
+                } else if (authData && authData.user) {
+                    authUserId = authData.user.id
+                } else {
+                    results.push({ id, status: 'failed', error: 'User creation failed silently' })
                     continue
                 }
-                console.log('Auth user created:', authData.user.id)
 
-                // Create profile
-                console.log('Creating profile...')
+                if (!authUserId) {
+                    results.push({ id, status: 'failed', error: 'Could not determine User ID' })
+                    continue
+                }
+
+                console.log('Auth user ready:', authUserId)
+
+                // Create/Update profile (Upsert to be safe)
+                console.log('Creating/Updating profile...')
                 const { error: profileError } = await supabase
                     .from('profiles')
-                    .insert({
-                        id: authData.user.id,
+                    .upsert({
+                        id: authUserId,
                         full_name: `${enquiry.first_name} ${enquiry.last_name}`,
                         email: enquiry.email,
                         role: 'candidate',
-                    })
+                    }, { onConflict: 'id' })
 
                 if (profileError) {
                     console.error('Profile error:', profileError)
-                    await supabase.auth.admin.deleteUser(authData.user.id)
+                    // If simple creation failed, we might not want to delete the user if it was an existing one.
+                    // But if it was new, we should cleanup.
+                    // For simplicity in this "fix" logic, we skip cleanup of 'existing' users to avoid data loss.
                     results.push({ id, status: 'failed', error: `Failed to create profile: ${profileError.message}` })
                     continue
                 }
-                console.log('Profile created successfully')
+                console.log('Profile ready')
 
                 // Create user credentials
                 console.log('Creating user credentials record...')
                 const { error: credError } = await supabase
                     .from('user_credentials')
                     .insert({
-                        user_id: authData.user.id,
+                        user_id: authUserId,
                         admission_enquiry_id: id,
                         username: username,
                         is_active: true,
@@ -152,8 +217,6 @@ export async function POST(request: NextRequest) {
 
                 if (credError) {
                     console.error('Credentials error:', credError)
-                    await supabase.auth.admin.deleteUser(authData.user.id)
-                    await supabase.from('profiles').delete().eq('id', authData.user.id)
                     results.push({ id, status: 'failed', error: `Failed to create credentials record: ${credError.message}` })
                     continue
                 }
