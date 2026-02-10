@@ -94,6 +94,11 @@ export default function QuestionsClient({ initialQuestions, subjects, subSession
         router.push(`?${params.toString()}`)
     }, [selectedExamSessionId, router, searchParams])
 
+    // Sync questions when initialQuestions (props) update due to server-side filter change
+    useEffect(() => {
+        setQuestions(initialQuestions)
+    }, [initialQuestions])
+
     const handleDeleteQuestion = async (id: string) => {
         if (!confirm('Are you sure you want to delete this question?')) return
 
@@ -194,6 +199,16 @@ export default function QuestionsClient({ initialQuestions, subjects, subSession
                 finalSubjectId = newSubject.id
             }
 
+            // Determine Exam Session ID
+            let finalExamSessionId = selectedExamSessionId
+            if (!finalExamSessionId && selectedSubSessionId && !selectedSubSessionId.startsWith('type:')) {
+                // Infer from selected sub-session
+                const subSession = subSessions.find(s => s.id === selectedSubSessionId)
+                if (subSession?.exam_session_id) {
+                    finalExamSessionId = subSession.exam_session_id
+                }
+            }
+
             const payload: any = {
                 // Schema requires 'type' (not null), mapping from local state
                 type: newQuestion.question_type,
@@ -204,8 +219,8 @@ export default function QuestionsClient({ initialQuestions, subjects, subSession
                 marks: newQuestion.marks,
                 // Only include subject_id if it's selected
                 ...(finalSubjectId && { subject_id: finalSubjectId }),
-                // Scope to exam session if selected
-                ...(selectedExamSessionId && { exam_session_id: selectedExamSessionId }),
+                // Scope to exam session
+                ...(finalExamSessionId && { exam_session_id: finalExamSessionId }),
             }
 
             if (newQuestion.question_type === 'mcq') {

@@ -2,6 +2,8 @@ import { requireAuth } from '@/lib/auth/helpers'
 import { createClient } from '@/lib/supabase/server'
 import QuestionsClient from './questions-client'
 
+export const dynamic = 'force-dynamic'
+
 async function getQuestions(examSessionId?: string) {
   const supabase = await createClient() // Fetch Questions from Bank
 
