@@ -236,13 +236,27 @@ export default function ResultsView({
                                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                                                         <div className={`p-3 rounded-lg border flex items-center justify-between ${isCorrect ? 'bg-green-50 border-green-200 text-green-800' : 'bg-red-50 border-red-200 text-red-800'
                                                             }`}>
-                                                            <span className="text-sm font-medium">Your Answer: {selectedOption} ({question.options?.[selectedOption] || ''})</span>
+                                                            <span className="text-sm font-medium">
+                                                                Your Answer: {selectedOption} (
+                                                                {(() => {
+                                                                    const opt = question.options?.[selectedOption]
+                                                                    return typeof opt === 'object' ? opt?.text : opt
+                                                                })() || ''}
+                                                                )
+                                                            </span>
                                                             {isCorrect ? <CheckCircle className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
                                                         </div>
 
                                                         {!isCorrect && (
                                                             <div className="p-3 rounded-lg border bg-blue-50 border-blue-200 text-blue-800 flex items-center justify-between">
-                                                                <span className="text-sm font-medium">Correct Answer: {correctOption} ({question.options?.[correctOption] || ''})</span>
+                                                                <span className="text-sm font-medium">
+                                                                    Correct Answer: {correctOption} (
+                                                                    {(() => {
+                                                                        const opt = question.options?.[correctOption]
+                                                                        return typeof opt === 'object' ? opt?.text : opt
+                                                                    })() || ''}
+                                                                    )
+                                                                </span>
                                                                 <CheckCircle className="h-4 w-4" />
                                                             </div>
                                                         )}

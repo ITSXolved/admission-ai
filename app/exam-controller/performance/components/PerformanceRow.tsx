@@ -1,9 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { Trash2 } from 'lucide-react'
+import { Trash2, Eye } from 'lucide-react'
 import StatusCell from './StatusCell'
 import WrittenReviewModal from '../../interviews/components/WrittenReviewModal'
+import ExamResponseModal from './ExamResponseModal'
 
 interface PerformanceRowProps {
     student: any
@@ -13,6 +14,7 @@ interface PerformanceRowProps {
 
 export default function PerformanceRow({ student, index, onDelete }: PerformanceRowProps) {
     const [isReviewOpen, setIsReviewOpen] = useState(false)
+    const [isResponseOpen, setIsResponseOpen] = useState(false)
     const [isDeleting, setIsDeleting] = useState(false)
 
     const handleDelete = async () => {
@@ -84,14 +86,23 @@ export default function PerformanceRow({ student, index, onDelete }: Performance
                     />
                 </td>
                 <td className="py-3 px-4">
-                    <button
-                        onClick={handleDelete}
-                        disabled={isDeleting}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
-                        title="Delete from performance tracking"
-                    >
-                        <Trash2 className="h-4 w-4" />
-                    </button>
+                    <div className="flex items-center gap-1">
+                        <button
+                            onClick={() => setIsResponseOpen(true)}
+                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="View Exam Score Card"
+                        >
+                            <Eye className="h-4 w-4" />
+                        </button>
+                        <button
+                            onClick={handleDelete}
+                            disabled={isDeleting}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                            title="Delete from performance tracking"
+                        >
+                            <Trash2 className="h-4 w-4" />
+                        </button>
+                    </div>
                 </td>
             </tr>
 
@@ -103,6 +114,14 @@ export default function PerformanceRow({ student, index, onDelete }: Performance
                     name: `${student.admission_enquiries?.first_name} ${student.admission_enquiries?.last_name}`
                 }}
                 examSessionId={student.exam_session_id}
+            />
+
+            <ExamResponseModal
+                isOpen={isResponseOpen}
+                onClose={() => setIsResponseOpen(false)}
+                studentId={student.student_id}
+                examSessionId={student.exam_session_id}
+                studentName={`${student.admission_enquiries?.first_name} ${student.admission_enquiries?.last_name}`}
             />
         </>
     )

@@ -21,6 +21,7 @@ export default function AdmissionDetails({
     const [isOpen, setIsOpen] = useState(false)
     const [isUpdating, setIsUpdating] = useState(false)
     const [coords, setCoords] = useState({ top: 0, left: 0 })
+    const [placement, setPlacement] = useState<'bottom' | 'top'>('bottom')
     const router = useRouter()
     const supabase = createClient()
     const buttonRef = useRef<HTMLButtonElement>(null)
@@ -43,14 +44,51 @@ export default function AdmissionDetails({
         })
     }, [details, isOpen])
 
-    const togglePopup = () => {
-        if (!isOpen && buttonRef.current) {
-            const rect = buttonRef.current.getBoundingClientRect()
-            setCoords({
-                top: rect.bottom + window.scrollY + 5,
-                left: Math.max(10, rect.right + window.scrollX - 320)
-            })
+    // Handle scroll/resize to update position if open
+    useEffect(() => {
+        if (!isOpen) return
+
+        const updatePosition = () => {
+            if (buttonRef.current) {
+                const rect = buttonRef.current.getBoundingClientRect()
+                const scrollY = window.scrollY
+                const scrollX = window.scrollX
+                const viewportHeight = window.innerHeight
+
+                // Check space below
+                const spaceBelow = viewportHeight - rect.bottom
+                const popupHeight = 450 // Approximate max height
+
+                let top = 0
+                let left = Math.max(10, rect.right + scrollX - 320)
+                let newPlacement: 'bottom' | 'top' = 'bottom'
+
+                if (spaceBelow < popupHeight && rect.top > popupHeight) {
+                    // Position above
+                    top = rect.top + scrollY - 5
+                    newPlacement = 'top'
+                } else {
+                    // Position below (default)
+                    top = rect.bottom + scrollY + 5
+                    newPlacement = 'bottom'
+                }
+
+                setCoords({ top, left })
+                setPlacement(newPlacement)
+            }
         }
+
+        updatePosition()
+        window.addEventListener('scroll', updatePosition, true)
+        window.addEventListener('resize', updatePosition)
+
+        return () => {
+            window.removeEventListener('scroll', updatePosition, true)
+            window.removeEventListener('resize', updatePosition)
+        }
+    }, [isOpen])
+
+    const togglePopup = () => {
         setIsOpen(!isOpen)
     }
 
@@ -104,8 +142,12 @@ export default function AdmissionDetails({
                         onClick={() => setIsOpen(false)}
                     />
                     <div
-                        style={{ top: coords.top, left: coords.left }}
-                        className="fixed z-50 w-80 p-5 bg-white rounded-xl shadow-xl border border-gray-100 animate-in fade-in zoom-in-95 duration-200"
+                        style={{
+                            top: coords.top,
+                            left: coords.left,
+                            transform: placement === 'top' ? 'translateY(-100%)' : 'none'
+                        }}
+                        className="absolute z-50 w-80 p-5 bg-white rounded-xl shadow-xl border border-gray-100 animate-in fade-in zoom-in-95 duration-200"
                     >
                         <div className="space-y-4">
                             <h4 className="font-semibold text-gray-900 border-b pb-2">Admission Details</h4>

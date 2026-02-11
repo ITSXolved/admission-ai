@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Download, Search, Filter } from 'lucide-react'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
@@ -12,6 +12,12 @@ interface InterviewsClientProps {
 
 export default function InterviewsClient({ initialCandidates }: InterviewsClientProps) {
     const [candidates, setCandidates] = useState(initialCandidates)
+
+    // Update local state when server data changes (e.g. after router.refresh())
+    useEffect(() => {
+        setCandidates(initialCandidates)
+    }, [initialCandidates])
+
     const [searchTerm, setSearchTerm] = useState('')
     const [statusFilter, setStatusFilter] = useState('all')
     const [dateStart, setDateStart] = useState('')
