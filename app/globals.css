@@ -1,15 +1,16 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-primary: #C9A961;
-  --color-primary-dark: #A68B4E;
-  --color-primary-light: #E5D4A6;
-  --color-primary-lighter: #F5EDD9;
-
-  --color-secondary: #1A1A1A;
-  --color-secondary-light: #2D2D2D;
-
-  --color-accent: #8B6F47;
+  --color-primary: #b38e3d; /* AyaTech Primary Gold */
+  --color-primary-gold: #b38e3d;
+  --color-gold-hover: #96752f;
+  --color-navy-dark: #1a202c;
+  --color-navy-light: #2a3441;
+  --color-bg-light: #f9fafb;
+  --color-surface-white: #FFFFFF;
+  --color-text-main: #1f2937;
+  --color-text-muted: #4b5563;
+  --color-accent: #b38e3d;
 
   --color-background: #FAFAF8;
   --color-surface: #FFFFFF;

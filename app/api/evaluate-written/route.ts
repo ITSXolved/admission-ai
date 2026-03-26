@@ -3,7 +3,7 @@ import { evaluateWrittenAnswer } from '@/utils/ai-evaluation'
 
 export async function POST(request: Request) {
     try {
-        const { attempt_id, question_id, image_urls, marks_per_question, language } = await request.json()
+        const { attempt_id, question_id, image_urls, marks_per_question, language, provider } = await request.json()
 
         if (!attempt_id || !question_id || !image_urls || image_urls.length === 0) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
@@ -14,7 +14,8 @@ export async function POST(request: Request) {
             question_id,
             image_urls,
             marks_per_question,
-            language
+            language,
+            provider
         )
 
         return NextResponse.json({ success: true, evaluation })
