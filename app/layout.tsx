@@ -16,8 +16,8 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "AILT Global Academy - Admission System",
-  description: "Comprehensive admission management system for AILT Global Academy",
+  title: "AyaTech Global Academy",
+  description: "Empowering the next generation of innovators with live courses in AI, coding, design, and hardware.",
 };
 
 export default function RootLayout({
