@@ -26,7 +26,7 @@ export default function Home() {
             {/* Logo */}
             <Link href="/" className="flex items-center gap-3 group">
               <div className="h-10 w-10 md:h-12 md:w-12 rounded-xl bg-white flex items-center justify-center shadow-lg shadow-primary/20 group-hover:scale-105 transition-transform overflow-hidden">
-                <img src="/logo.png" alt="AyaTech Logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                <img src="/logo_v3.png" alt="AyaTech Logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
               </div>
               <div className="flex flex-col">
                 <span className="text-lg md:text-xl font-bold text-gray-900 tracking-tight">AyaTech</span>
@@ -154,7 +154,7 @@ export default function Home() {
             <div className="flex flex-col gap-6">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-lg bg-white flex items-center justify-center overflow-hidden">
-                  <img src="/logo.png" alt="AyaTech Logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                  <img src="/logo_v3.png" alt="AyaTech Logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
                 </div>
                 <span className="text-xl font-bold tracking-tight">AyaTech</span>
               </div>
